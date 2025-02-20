@@ -126,8 +126,15 @@ class VaeReducer:
         elif X_device != X.device:
             X.to(X_device)
         return X
-            
+    
+    def reset_weights(self):
+        def rst(m):
+            if hasattr(m, 'reset_parameters'):
+                m.reset_parameters()
+        self.reducer.apply(rst)
+
     def fit(self, X, max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2):
+        self.reset_weights()
         X, X_type, X_device = self.fix_input_type_and_device(X)
         inds = torch.randperm(len(X))
         N_valid = int(len(X) * valid_size)
