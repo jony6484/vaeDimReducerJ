@@ -2,14 +2,14 @@ import path_setup
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from VaeDimReducer.vaeDimReducer import VaeReducer
+from VaeDimReducer.VaeDimReducerJ import VaeReducer
 import numpy as np
 
 from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 import plotly.express as px
 
 
-# X, y = load_iris(return_X_y=True)
+X, y = load_iris(return_X_y=True)
 # X, y = load_breast_cancer(return_X_y=True)
 X, y = load_digits(return_X_y=True)
 

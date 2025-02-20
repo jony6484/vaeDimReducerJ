@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 VERSION = '0.1.0'
 DESCRIPTION = 'Vae Dim Reducer'
 setup(
-    name='VaeDimReducer',
+    name='VaeDimReducerJ',
     packages=find_packages(),
     version=VERSION,
     description=DESCRIPTION,
