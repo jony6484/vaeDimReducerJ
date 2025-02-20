@@ -129,7 +129,6 @@ class VaeReducer:
             
     def fit(self, X, max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2):
         X, X_type, X_device = self.fix_input_type_and_device(X)
-        X = X.to(self.device)
         inds = torch.randperm(len(X))
         N_valid = int(len(X) * valid_size)
         data_train = AEDataset(X[inds[N_valid:]])
