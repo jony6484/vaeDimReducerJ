@@ -97,7 +97,12 @@ def r2_score(y_true, y_pred):
 
 
 class VaeReducer:
-    def __init__(self, input_dim, latent_dim, encoder_layers=[20, 20], decoder_layers=[20, 20]):
+    def __init__(self, input_dim, latent_dim, encoder_layers=[20, 20], decoder_layers=[20, 20], max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2):
+        self.max_batch_size = max_batch_size
+        self.beta = beta
+        self.max_epochs = max_epochs
+        self.target_r2 = target_r2
+        self.valid_size = valid_size
         self.reducer = LinearVae(input_dim, latent_dim, encoder_layers, decoder_layers)
         self.to_cpu()
 
@@ -133,26 +138,26 @@ class VaeReducer:
                 m.reset_parameters()
         self.reducer.apply(rst)
 
-    def fit(self, X, max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2):
+    def fit(self, X):
         self.reset_weights()
         X, X_type, X_device = self.fix_input_type_and_device(X)
         inds = torch.randperm(len(X))
-        N_valid = int(len(X) * valid_size)
+        N_valid = int(len(X) * self.valid_size)
         data_train = AEDataset(X[inds[N_valid:]])
         data_valid = AEDataset(X[inds[:N_valid]])
-        if max_batch_size is None:
+        if self.max_batch_size is None:
             batch_size = len(data_train)
         loader_train = DataLoader(data_train, batch_size=batch_size, shuffle=True)
         loader_valid = DataLoader(data_valid, batch_size=batch_size, shuffle=False)
-        loss_func = VAELoss(beta=beta)
+        loss_func = VAELoss(beta=self.beta)
         metric_func = r2_score
         optimizer = torch.optim.Adam(self.reducer.parameters())
         epoch_metric = 0
         epoch_count = 0
-        pbar = tqdm(range(max_epochs), desc="Processing")
+        pbar = tqdm(range(self.max_epochs), desc="Processing")
         for ii in pbar:
             pbar.set_description(f"r2: {epoch_metric:0.4f}")
-            if epoch_metric >= target_r2:
+            if epoch_metric >= self.target_r2:
                 break         
             epoch_count += 1
             # Train
