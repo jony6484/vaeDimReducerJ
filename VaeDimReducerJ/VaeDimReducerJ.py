@@ -12,7 +12,7 @@ class LinearVae(nn.Module):
         # Encoder:
         layer_lst = []
         for output_dim in encoder_layers:
-            layer_lst += [nn.Linear(input_dim, output_dim), nn.ReLU()]
+            layer_lst += [nn.Linear(input_dim, output_dim), nn.BatchNorm1d(output_dim), nn.ReLU()]
             input_dim = output_dim
         layer_lst.append(nn.Linear(input_dim, latent_dim * 2))
         self.encoder = nn.Sequential(*layer_lst)
@@ -20,7 +20,7 @@ class LinearVae(nn.Module):
         input_dim = latent_dim
         layer_lst = []
         for output_dim in decoder_layers:
-            layer_lst += [nn.Linear(input_dim, output_dim), nn.ReLU()]
+            layer_lst += [nn.Linear(input_dim, output_dim), nn.BatchNorm1d(output_dim), nn.ReLU()]
             input_dim = output_dim
         layer_lst.append(nn.Linear(input_dim, self.input_dim))       
         self.decoder = nn.Sequential(*layer_lst)
@@ -97,12 +97,13 @@ def r2_score(y_true, y_pred):
 
 
 class VaeReducer:
-    def __init__(self, input_dim, latent_dim, encoder_layers=[20, 20], decoder_layers=[20, 20], max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2, device='cpu'):
+    def __init__(self, input_dim, latent_dim, encoder_layers=[20, 20], decoder_layers=[20, 20], max_batch_size=None, beta=0.005, max_epochs=100, target_r2=0.5, valid_size=0.2, device='cpu', max_patiance=20):
         self.max_batch_size = max_batch_size
         self.beta = beta
         self.max_epochs = max_epochs
         self.target_r2 = target_r2
         self.valid_size = valid_size
+        self.max_patiance = max_patiance
         self.reducer = LinearVae(input_dim, latent_dim, encoder_layers, decoder_layers)
         if device == 'cpu':
             self.to_cpu()
@@ -158,9 +159,11 @@ class VaeReducer:
         epoch_metric = 0
         epoch_count = 0
         pbar = tqdm(range(self.max_epochs), desc="Processing")
+        best_metric = -np.inf
+        patiance = 0
         for ii in pbar:
             pbar.set_description(f"r2: {epoch_metric:0.4f}")
-            if epoch_metric >= self.target_r2:
+            if (epoch_metric >= self.target_r2) or (patiance >= self.max_patiance):
                 break         
             epoch_count += 1
             # Train
@@ -183,8 +186,12 @@ class VaeReducer:
                     count += N_batch
                     epoch_metric += N_batch * metric
             epoch_metric /= count
+            patiance += 1
+            if (epoch_metric - best_metric) > 0.0001:
+                best_metric = epoch_metric
+                patiance = 0
         X = self.revert_input_type_and_device(X, X_type, X_device)
-        print(f"data fitted with r2 of {epoch_metric}, after {epoch_count} epochs")
+        print(f"data fitted with r2 of {epoch_metric: 0.4f}, after {epoch_count} epochs")
 
 
     def transform(self, X):
