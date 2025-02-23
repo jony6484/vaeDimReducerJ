@@ -97,14 +97,17 @@ def r2_score(y_true, y_pred):
 
 
 class VaeReducer:
-    def __init__(self, input_dim, latent_dim, encoder_layers=[20, 20], decoder_layers=[20, 20], max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2):
+    def __init__(self, input_dim, latent_dim, encoder_layers=[20, 20], decoder_layers=[20, 20], max_batch_size=None, beta=0.5, max_epochs=100, target_r2=0.5, valid_size=0.2, device='cpu'):
         self.max_batch_size = max_batch_size
         self.beta = beta
         self.max_epochs = max_epochs
         self.target_r2 = target_r2
         self.valid_size = valid_size
         self.reducer = LinearVae(input_dim, latent_dim, encoder_layers, decoder_layers)
-        self.to_cpu()
+        if device == 'cpu':
+            self.to_cpu()
+        else:
+            self.to_gpu()
 
     def to_gpu(self):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
